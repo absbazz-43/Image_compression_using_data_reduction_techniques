@@ -1,13 +1,13 @@
 ---
 title: "Image compression using various kinds of dimension reduction techniques"
 date: "2023-02-10"
-output:
-  html_document:
-    df_print: paged
+output: 
+  pdf_document:
+    toc: True
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, error = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo =TRUE, error = TRUE, warning = FALSE, message = FALSE)
 ```
 
 
@@ -19,14 +19,14 @@ library(knitr)
 ```
 
 
-# Actual Image 
+# RGB image compression 
 
 
 ```{r}
 tiger <- readJPEG("C:/Users/W.C/Downloads/programming/PCA image/tiger.jpg")
 ```
 
-# Image compression using principle component analysis (PCA).
+## Image compression using principle component analysis (PCA).
 
 ```{r}
 Image_pca <- function(Image, components ){
@@ -51,7 +51,7 @@ Image_pca(Image =  tiger, 300)
 ```
 
 
-
+## Image compression using Singular value decomposition 
 
 ```{r}
 Image_svd <- function(Image, components ){
@@ -75,7 +75,7 @@ Image_svd <- function(Image, components ){
 Image_svd(Image =  tiger, 300)
 ```
 
-
+## Image compression using Factor analysis
 
 ```{r}
 Image_factor <- function(Image, factors ){
@@ -100,6 +100,7 @@ Image_factor(Image = tiger, 300)
 ```
 
 
+## Image compression using ICA
 
 ```{r}
 Image_ica <- function(Image, components ){
@@ -124,7 +125,7 @@ Image_ica(Image =  tiger, 300)
 
 ```
 
-
+##  Image compression using Kmeans 
 
 ```{r}
 Image_kmeans <- function(Image, components ){
@@ -149,36 +150,7 @@ Image_kmeans(Image =  tiger, 300)
 
 ```
 
-
-
-
-
-```{r}
-library(raster)
-im <- raster("C:/Users/W.C/Downloads/programming/PCA image/tiger.jpg")
-image(im)
-img.flip<-flip(im, direction = "y")
-rasterimg<-t(as.matrix(img.flip))
-dim(rasterimg)
-image_factors <- fa(rasterimg,nfactors = 300)
-num_factors <- 200
-compressed_image_matrix <- image_factors$scores[, 1:num_factors] %*% t(image_factors$loadings[, 1:num_factors])
-image(compressed_image_matrix)
-```
-
-
-
-```{r eval = FALSE}
-library(EBImage)
-files <- list.files(path="C:\\Users\\W.C\\Downloads\\programming\\PCA image", pattern=".jpg",all.files=T, full.names=F, no.. = T)  
-#This imports the files as: files  - chr[1:2] "n04197391_11_0" "n04197391_74_0"
-mypic1 <- list()
-for (i in 1:length(files))
-{
-  mypic1[[i]] <- readImage(files[i])
-  display(mypic1[[i]])
-}
-```
+# RGB image comparison
 
 ## REAL VS PCA 
 
@@ -227,4 +199,157 @@ include_graphics(paste0("ICAimage",components,".jpg"))
 include_graphics("tiger.jpg")
 include_graphics(paste0("Kmeansimage",components,".jpg"))
 
+```
+
+# Raster image and it's compression 
+
+
+```{r}
+library(raster)
+im <- raster("C:/Users/W.C/Downloads/programming/PCA image/tiger.jpg")
+img.flip<-flip(im, direction = "y")
+rasterimg<-t(as.matrix(img.flip))
+```
+
+## Raster image compression for PCA 
+
+```{r fig.cap="PCA image"}
+
+
+pca_func <- function(Rimage, components){
+  image_pca <- prcomp(Rimage)
+ compressed_image_matrix <- image_pca$x[, 1:components] %*%    t(image_pca$rotation[, 1:components])
+ return(image(compressed_image_matrix))
+}
+
+pca_func(rasterimg, 100)
+
+```
+
+
+
+
+## Raster Image compression using Factor analysis 
+```{r fig.cap="Factor analysis image"}
+
+fa_func <- function(Rimage, components){
+  image_factors <- fa(Rimage, nfactors = components)
+ compressed_image_matrix <- image_factors$scores %*% t(image_factors$loadings)
+ return(image(compressed_image_matrix))
+}
+# fa_func(rasterimg, 100)
+
+```
+
+
+## Raster image compression using  Singular value decomposition 
+
+
+
+```{r fig.cap="SVD image"}
+svd_func <- function(Rimage, components){
+  imsvd <- svd(Rimage)
+ compressed_image_matrix <- imsvd$u[,1:components] %*% diag(imsvd$d[1:components]) %*% t(imsvd$v[,1:components])
+ return(image(compressed_image_matrix))
+}
+# svd_func(rasterimg, 100)
+
+```
+
+## Image compression using ICA 
+
+
+
+```{r fig.cap="ICA image"}
+
+ica_func <- function(Rimage, components){
+  imica <- fastICA(Rimage, n = components)
+ compressed_image_matrix <- imica$S %*% imica$A
+ return(image(compressed_image_matrix))
+}
+# ica_func(rasterimg, 100)
+
+
+```
+
+
+
+## Image compression using Kmeans
+
+
+```{r fig.cap="Kmeans cluster image"}
+kmeans_func <- function(Rimage, center){
+  imk <- kmeans(Rimage, centers  = center)
+ compressed_image_matrix <- imk$centers[imk$cluster,]
+ return(image(compressed_image_matrix))
+}
+# kmeans_func(rasterimg, 100)
+
+```
+# Comparison Rastering image
+
+## Real vs PCA
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs PCA"}
+
+include_graphics(image(im))
+include_graphics(pca_func(rasterimg, 100))
+
+```
+
+
+## Real vs Factor analysis
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs Factor Analysis"}
+
+include_graphics(image(im))
+include_graphics(fa_func(rasterimg, 100))
+
+```
+
+
+## Real vs SVD
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs SVD"}
+
+include_graphics(image(im))
+include_graphics(svd_func(rasterimg, 100))
+
+```
+
+
+## Real vs ICA
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs ICA"}
+
+include_graphics(image(im))
+include_graphics(ica_func(rasterimg, 100))
+
+```
+
+
+
+
+## Real vs Kmeans
+ 
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs KMENAS"}
+
+include_graphics(image(im))
+include_graphics(kmeans_func(rasterimg, 100))
+
+```
+
+
+## Extra 
+
+```{r eval = FALSE}
+library(EBImage)
+files <- list.files(path="C:\\Users\\W.C\\Downloads\\programming\\PCA image", pattern=".jpg",all.files=T, full.names=F, no.. = T)  
+#This imports the files as: files  - chr[1:2] "n04197391_11_0" "n04197391_74_0"
+mypic1 <- list()
+for (i in 1:length(files))
+{
+  mypic1[[i]] <- readImage(files[i])
+  display(mypic1[[i]])
+}
 ```
