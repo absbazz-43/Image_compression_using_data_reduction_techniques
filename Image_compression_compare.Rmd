@@ -1,0 +1,230 @@
+---
+title: "Image compression using various kinds of dimension reduction techniques"
+date: "2023-02-10"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, error = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+```{r}
+library(jpeg)
+library(fastICA)
+library(psych)
+library(knitr)
+```
+
+
+# Actual Image 
+
+
+```{r}
+tiger <- readJPEG("C:/Users/W.C/Downloads/programming/PCA image/tiger.jpg")
+```
+
+# Image compression using principle component analysis (PCA).
+
+```{r}
+Image_pca <- function(Image, components ){
+   r <- Image[,,1]
+   g <- Image[,,2]
+   b <- Image[,,3]
+   pcr <- prcomp(r)
+   pcg <- prcomp(g)
+   pcb <- prcomp(b)
+   pr_list <- list(pcr, pcg, pcb)
+   pc_im <- sapply(
+     
+     pr_list,  function(i){
+       im_tr <-  i$x[,1:components] %*% t(i$rotation[,1:components])
+     },
+      simplify = "array"
+   )
+   return( writeJPEG(pc_im,paste0("PCAimage",components,".jpg")))
+}
+
+Image_pca(Image =  tiger, 300)
+```
+
+
+
+
+```{r}
+Image_svd <- function(Image, components ){
+   r <- Image[,,1]
+   g <- Image[,,2]
+   b <- Image[,,3]
+   pcr <- svd(r)
+   pcg <- svd(g)
+   pcb <- svd(b)
+   pr_list <- list(pcr, pcg, pcb)
+   pc_im <- sapply(
+     
+     pr_list,  function(i){
+       im_tr <- i$u[,1:components] %*% diag(i$d[1:components]) %*% t(i$v[,1:components])
+     },
+      simplify = "array"
+   )
+   return( writeJPEG(pc_im,paste0("SVDimage",components,".jpg")))
+}
+
+Image_svd(Image =  tiger, 300)
+```
+
+
+
+```{r}
+Image_factor <- function(Image, factors ){
+  r <- Image[,,1]
+  g <- Image[,,2]
+  b <- Image[,,3]
+  pcr <- fa(r,nfactors = factors, scores =  "Anderson")
+  pcg <- fa(g,nfactors = factors, scores =  "Anderson")
+  pcb <- fa(b,nfactors = factors, scores =  "Anderson")
+  pr_list <- list(pcr, pcg, pcb)
+  pc_im <- sapply(
+    
+    pr_list,  function(i){
+      img <-  i$scores %*% t(i$loadings)
+    },
+    simplify = "array"
+  )
+  return( writeJPEG(pc_im,paste0("FACTORimage",factors,".jpg")))
+}  
+
+Image_factor(Image = tiger, 300)
+```
+
+
+
+```{r}
+Image_ica <- function(Image, components ){
+   r <- Image[,,1]
+   g <- Image[,,2]
+   b <- Image[,,3]
+   pcr <- fastICA(r, n = components )
+   pcg <- fastICA(g, n = components)
+   pcb <- fastICA(b, n = components)
+   pr_list <- list(pcr, pcg, pcb)
+   pc_im <- sapply(
+     
+     pr_list,  function(i){
+       img <- i$S %*% i$A
+     },
+      simplify = "array"
+   )
+   return( writeJPEG(pc_im,paste0("ICAimage",components,".jpg")))
+}
+
+Image_ica(Image =  tiger, 300)
+
+```
+
+
+
+```{r}
+Image_kmeans <- function(Image, components ){
+   r <- Image[,,1]
+   g <- Image[,,2]
+   b <- Image[,,3]
+   pcr <- kmeans(r,centers = components)
+   pcg <- kmeans(g,centers = components)
+   pcb <- kmeans(b,centers =components)
+   pr_list <- list(pcr, pcg, pcb)
+   pc_im <- sapply(
+     
+     pr_list,  function(i){
+       img <-  i$centers[i$cluster,]
+     },
+      simplify = "array"
+   )
+   return( writeJPEG(pc_im,paste0("Kmeansimage",components,".jpg")))
+}
+
+Image_kmeans(Image =  tiger, 300)
+
+```
+
+
+
+
+
+```{r}
+library(raster)
+im <- raster("C:/Users/W.C/Downloads/programming/PCA image/tiger.jpg")
+image(im)
+img.flip<-flip(im, direction = "y")
+rasterimg<-t(as.matrix(img.flip))
+dim(rasterimg)
+image_factors <- fa(rasterimg,nfactors = 300)
+num_factors <- 200
+compressed_image_matrix <- image_factors$scores[, 1:num_factors] %*% t(image_factors$loadings[, 1:num_factors])
+image(compressed_image_matrix)
+```
+
+
+
+```{r eval = FALSE}
+library(EBImage)
+files <- list.files(path="C:\\Users\\W.C\\Downloads\\programming\\PCA image", pattern=".jpg",all.files=T, full.names=F, no.. = T)  
+#This imports the files as: files  - chr[1:2] "n04197391_11_0" "n04197391_74_0"
+mypic1 <- list()
+for (i in 1:length(files))
+{
+  mypic1[[i]] <- readImage(files[i])
+  display(mypic1[[i]])
+}
+```
+
+## REAL VS PCA 
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs PCA"}
+components = 300
+include_graphics("tiger.jpg")
+include_graphics(paste0("PCAimage",components,".jpg"))
+
+```
+
+
+## REAL VS SVD 
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs SVD"}
+
+include_graphics("tiger.jpg")
+include_graphics(paste0("SVDimage",components,".jpg"))
+
+```
+
+
+## REAL VS FACTOR
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs FACTOR"}
+
+include_graphics("tiger.jpg")
+include_graphics(paste0("FACTORimage",components,".jpg"))
+
+```
+
+
+## REAL VS ICA
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs ICA"}
+
+include_graphics("tiger.jpg")
+include_graphics(paste0("ICAimage",components,".jpg"))
+
+```
+
+
+## REAL VS Kmeans
+
+```{r fig.show = "hold", out.width = "50%", fig.align = "default", fig.cap ="REAL vs KMENAS"}
+
+include_graphics("tiger.jpg")
+include_graphics(paste0("Kmeansimage",components,".jpg"))
+
+```
